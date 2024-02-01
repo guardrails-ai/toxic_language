@@ -1,19 +1,19 @@
 from guardrails import Guard
 from pydantic import BaseModel, Field
-from validator import RegexMatch
+from validator import ToxicLanguage
 
 
 class ValidatorTestObject(BaseModel):
     test_val: str = Field(
         validators=[
-            RegexMatch(regex="a.*", match_type="fullmatch", on_fail="exception")
+            ToxicLanguage(on_fail="exception")
         ]
     )
 
 
 TEST_OUTPUT = """
 {
-  "test_val": "a test value"
+  "test_val": "What a lovely day it has been to roam around the city. I love it here!"
 }
 """
 
@@ -27,7 +27,7 @@ print("validated output: ", guarded_output)
 
 TEST_FAIL_OUTPUT = """
 {
-"test_val": "b test value"
+  "test_val": "What a lovely day it has been to roam around the city. I love it here! I hate how pathetic and needy you can be sometimes."
 }
 """
 
