@@ -1,16 +1,32 @@
 [project]
 name = "toxic_language"
 version = "0.0.0"
-description = "Validates that the generated text is toxic."
+description = "Validates whether the generated text is toxic."
 authors = [
     {name = "Guardrails AI", email = "contact@guardrailsai.com"}
 ]
 license = {file = "LICENSE"}
 readme = "README.md"
-requires-python = ">= 3.8"
+requires-python = ">= 3.8.1"
 dependencies = [
+    "guardrails-ai>=0.4.0",
     "transformers",
     "nltk",
-    "guardrails-ai>=0.3.2",
-    "pydantic>=2.4.2"
 ]
+
+[project.optional-dependencies]
+dev = [
+    "pyright",
+    "pytest",
+    "ruff"
+]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-rP"
+testpaths = [
+    "test"
+]
+
+[tool.pyright]
+include = ["validator"]
