@@ -133,7 +133,7 @@ class ToxicLanguage(Validator):
             return FailResult(
                 metadata=metadata,
                 error_message=(
-                    f"The following sentences in your response"
+                    f"The following sentences in your response "
                     "were found to be toxic:\n"
                     f"\n{unsupported_sentences}"
                 ),
