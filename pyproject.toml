@@ -10,8 +10,9 @@ readme = "README.md"
 requires-python = ">= 3.8.1"
 dependencies = [
     "guardrails-ai>=0.4.0",
-    "transformers",
     "nltk",
+    "transformers",
+    "torch",
 ]
 
 [project.optional-dependencies]
