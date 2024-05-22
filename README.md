@@ -20,7 +20,7 @@ In our experiments, a threshold of 0.5 worked best, hence set as default here. H
 ### Requirements
 
 * Dependencies:
-	- `nltk`
+    - `nltk`
     - `transformers`
     - `torch`
     - guardrails-ai>=0.4.0
