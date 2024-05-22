@@ -1,15 +1,15 @@
 ## Overview
 
 | Developed by | Guardrails AI |
-| --- | --- |
 | Date of development | Feb 15, 2024 |
 | Validator type | Moderation |
-| Blog | - |
+| Blog |  |
 | License | Apache 2 |
 | Input/Output | Output |
 
 ## Description
 
+### Intended Use
 This validator uses the pre-trained multi-label model from HuggingFace - `unitary/unbiased-toxic-roberta` to check whether the generated text is toxic. If the model predicts any label of: `toxicity`, `severe_toxicity`, `obscene`, `threat`, `insult`, `identity_attack`, or `sexual_explicit` with confidence higher than the specified threshold, the validator fails and returns the generated text with the toxic sentences / entire text removed. Else the validator returns the generated text as it is.
 
 If validation_method is `sentence`, the validator will remove the sentences that are predicted to be toxic and return the remaining sentences. If validation_method is `full`, the validator will remove the entire text if the prediction is deemed toxic and return an empty string.
@@ -17,9 +17,13 @@ If validation_method is `sentence`, the validator will remove the sentences that
 In our experiments, a threshold of 0.5 worked best, hence set as default here. However, you can try different values of threshold to see what works best for your use case. Link for experiments: https://wandb.ai/ml-guardrails/toxic-language-experiments
 
 
-### Resources required
+### Requirements
 
-- Dependencies: `nltk`, `transformers`, `torch`
+* Dependencies:
+	- `nltk`
+    - `transformers`
+    - `torch`
+    - guardrails-ai>=0.4.0
 
 ## Installation
 
@@ -62,7 +66,7 @@ Validation failed for field with errors: The following sentences in your respons
 ```
 **Note: How the validator detected only the 2nd sentence within the failing response as toxic and flagged it as toxic.**
 
-## API Reference
+# API Reference
 
 **`__init__(self, threshold=0.5, validation_method="sentence", on_fail="noop")`**
 <ul>
