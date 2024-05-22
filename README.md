@@ -16,7 +16,6 @@ If validation_method is `sentence`, the validator will remove the sentences that
 
 In our experiments, a threshold of 0.5 worked best, hence set as default here. However, you can try different values of threshold to see what works best for your use case. Link for experiments: https://wandb.ai/ml-guardrails/toxic-language-experiments
 
-
 ### Requirements
 
 * Dependencies:
@@ -28,7 +27,7 @@ In our experiments, a threshold of 0.5 worked best, hence set as default here. H
 ## Installation
 
 ```bash
-guardrails hub install hub://guardrails/toxic_language
+$ guardrails hub install hub://guardrails/toxic_language
 ```
 
 ## Usage Examples
