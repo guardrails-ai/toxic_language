@@ -64,7 +64,7 @@ class ToxicLanguage(Validator):
             raise ValueError("validation_method must be 'sentence' or 'full'.")
         self._validation_method = validation_method
         self._device = (
-            device.lower() if device.lower() in ["cpu", "mps"] else int(device)
+            str(device).lower() if str(device).lower() in ["cpu", "mps"] else int(device)
         )
         # Define the model, pipeline and labels
         self._model_name = "unitary/unbiased-toxic-roberta"
