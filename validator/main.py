@@ -1,5 +1,6 @@
-from typing import Any, Callable, Dict, List, Union, cast
+from typing import Any, Callable, Dict, List, Optional, Union, cast
 
+import nltk
 from guardrails.validator_base import (
     FailResult,
     PassResult,
@@ -7,8 +8,6 @@ from guardrails.validator_base import (
     Validator,
     register_validator,
 )
-
-import nltk
 from transformers import pipeline
 
 
@@ -53,6 +52,7 @@ class ToxicLanguage(Validator):
         self,
         threshold: float = 0.5,
         validation_method: str = "sentence",
+        device: Optional[int] = -1,
         on_fail: Union[Callable[..., Any], None] = None,
         **kwargs,
     ):
@@ -63,7 +63,7 @@ class ToxicLanguage(Validator):
         if validation_method not in ["sentence", "full"]:
             raise ValueError("validation_method must be 'sentence' or 'full'.")
         self._validation_method = validation_method
-
+        self._device = device if device in ["cpu", "mps"] else int(device)
         # Define the model, pipeline and labels
         self._model_name = "unitary/unbiased-toxic-roberta"
         self._detoxify_pipeline = pipeline(
@@ -73,6 +73,7 @@ class ToxicLanguage(Validator):
             top_k=None,
             padding="max_length",
             truncation=True,
+            device=self._device,
         )
         self._labels = [
             "toxicity",
