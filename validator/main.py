@@ -53,6 +53,7 @@ class ToxicLanguage(Validator):
         threshold: float = 0.5,
         validation_method: str = "sentence",
         device: Optional[Union[str, int]] = -1,
+        model_name: Optional[str] = "unitary/unbiased-toxic-roberta", 
         on_fail: Union[Callable[..., Any], None] = None,
         **kwargs,
     ):
@@ -67,10 +68,9 @@ class ToxicLanguage(Validator):
             str(device).lower() if str(device).lower() in ["cpu", "mps"] else int(device)
         )
         # Define the model, pipeline and labels
-        self._model_name = "unitary/unbiased-toxic-roberta"
         self._detoxify_pipeline = pipeline(
             "text-classification",
-            model=self._model_name,
+            model=model_name,
             function_to_apply="sigmoid",
             top_k=None,
             padding="max_length",
