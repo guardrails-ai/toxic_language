@@ -52,7 +52,7 @@ class ToxicLanguage(Validator):
         self,
         threshold: float = 0.5,
         validation_method: str = "sentence",
-        device: Optional[int] = -1,
+        device: Optional[Union[str, int]] = -1,
         on_fail: Union[Callable[..., Any], None] = None,
         **kwargs,
     ):
@@ -63,7 +63,9 @@ class ToxicLanguage(Validator):
         if validation_method not in ["sentence", "full"]:
             raise ValueError("validation_method must be 'sentence' or 'full'.")
         self._validation_method = validation_method
-        self._device = device if device in ["cpu", "mps"] else int(device)
+        self._device = (
+            device.lower() if device.lower() in ["cpu", "mps"] else int(device)
+        )
         # Define the model, pipeline and labels
         self._model_name = "unitary/unbiased-toxic-roberta"
         self._detoxify_pipeline = pipeline(
