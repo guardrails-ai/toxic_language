@@ -34,7 +34,10 @@ class ValidatorTestObject(BaseModel):
 def test_happy_path(value):
     # Create a guard from the pydantic model
     validator = ToxicLanguage(
-        threshold=0.5, validation_method="sentence", on_fail="exception"
+        model_name="unbiased",
+        threshold=0.5,
+        validation_method="sentence",
+        on_fail="exception",
     )
     response = validator.validate(value, metadata={})
     print("Happy path response", response)
@@ -61,7 +64,10 @@ def test_happy_path(value):
 def test_fail_path(value):
     # Create a guard from the pydantic model
     validator = ToxicLanguage(
-        threshold=0.5, validation_method="sentence", on_fail="exception"
+        model_name="unbiased-small",
+        threshold=0.5,
+        validation_method="sentence",
+        on_fail="exception",
     )
     response = validator.validate(value, metadata={})
     print("Unhappy path response", response)

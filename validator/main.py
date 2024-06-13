@@ -67,6 +67,7 @@ class ToxicLanguage(Validator):
         self._validation_method = validation_method
         # Define the model, pipeline and labels
         self._model = detoxify.Detoxify(model_name, device=torch.device(device))
+        print(self._model)
         self._labels = [
             "toxicity",
             "severe_toxicity",
