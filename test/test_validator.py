@@ -1,6 +1,6 @@
 import pytest
 from guardrails import Guard
-from main import ToxicLanguage
+from validator import ToxicLanguage
 from pydantic import BaseModel, Field
 
 
