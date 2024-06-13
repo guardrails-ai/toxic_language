@@ -1,7 +1,7 @@
-from guardrails import Guard
-from pydantic import BaseModel, Field
-from validator import ToxicLanguage
 import pytest
+from guardrails import Guard
+from main import ToxicLanguage
+from pydantic import BaseModel, Field
 
 
 # Create a pydantic model with a field that uses the custom validator
@@ -33,10 +33,13 @@ class ValidatorTestObject(BaseModel):
 )
 def test_happy_path(value):
     # Create a guard from the pydantic model
-    guard = Guard.from_pydantic(output_class=ValidatorTestObject)
-    response = guard.parse(value)
+    validator = ToxicLanguage(
+        threshold=0.5, validation_method="sentence", on_fail="exception"
+    )
+    response = validator.validate(value, metadata={})
     print("Happy path response", response)
-    assert response.validation_passed is True
+
+    assert response.outcome == "pass"
 
 
 # Test fail path
@@ -57,8 +60,10 @@ def test_happy_path(value):
 )
 def test_fail_path(value):
     # Create a guard from the pydantic model
-    guard = Guard.from_pydantic(output_class=ValidatorTestObject)
+    validator = ToxicLanguage(
+        threshold=0.5, validation_method="sentence", on_fail="exception"
+    )
+    response = validator.validate(value, metadata={})
+    print("Unhappy path response", response)
 
-    with pytest.raises(Exception):
-        response = guard.parse(value)
-        print("Fail path response", response)
+    assert response.outcome == "fail"

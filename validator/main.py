@@ -8,8 +8,8 @@ from guardrails.validator_base import (
     Validator,
     register_validator,
 )
-from transformers import pipeline
-
+import detoxify
+import torch
 
 @register_validator(name="guardrails/toxic_language", data_type="string")
 class ToxicLanguage(Validator):
@@ -52,31 +52,21 @@ class ToxicLanguage(Validator):
         self,
         threshold: float = 0.5,
         validation_method: str = "sentence",
-        device: Optional[Union[str, int]] = -1,
-        model_name: Optional[str] = "unitary/unbiased-toxic-roberta", 
+        device: Optional[Union[str, int]] = "cpu",
+        model_name: Optional[str] = "unbiased-small", 
         on_fail: Union[Callable[..., Any], None] = None,
         **kwargs,
     ):
         super().__init__(
             on_fail, threshold=threshold, validation_method=validation_method, **kwargs
         )
+        
         self._threshold = float(threshold)
         if validation_method not in ["sentence", "full"]:
             raise ValueError("validation_method must be 'sentence' or 'full'.")
         self._validation_method = validation_method
-        self._device = (
-            str(device).lower() if str(device).lower() in ["cpu", "mps"] else int(device)
-        )
         # Define the model, pipeline and labels
-        self._detoxify_pipeline = pipeline(
-            "text-classification",
-            model=model_name,
-            function_to_apply="sigmoid",
-            top_k=None,
-            padding="max_length",
-            truncation=True,
-            device=self._device,
-        )
+        self._model = detoxify.Detoxify(model_name, device=torch.device(device))
         self._labels = [
             "toxicity",
             "severe_toxicity",
@@ -105,11 +95,10 @@ class ToxicLanguage(Validator):
         # with confidence higher than the threshold
         pred_labels = []
         if value:
-            results = self._detoxify_pipeline(value)
+            results = self._model.predict(value)
             if results:
                 results = cast(List[List[Dict[str, Any]]], results)
-                for label_info in results[0]:
-                    label, score = label_info["label"], label_info["score"]
+                for label, score in results.items():
                     if label in self._labels and score > self._threshold:
                         pred_labels.append(label)
         return pred_labels

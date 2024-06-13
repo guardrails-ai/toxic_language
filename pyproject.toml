@@ -13,6 +13,7 @@ dependencies = [
     "nltk",
     "transformers",
     "torch",
+    "detoxify"
 ]
 
 [project.optional-dependencies]
