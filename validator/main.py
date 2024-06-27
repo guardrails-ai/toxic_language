@@ -1,18 +1,14 @@
 import difflib
+import json
 from typing import Any, Callable, Dict, List, Optional, Union, cast
 
 import detoxify
 import nltk
 import torch
-from guardrails.validator_base import (
-    ErrorSpan,
-    FailResult,
-    PassResult,
-    ValidationResult,
-    Validator,
-    register_validator,
-)
-import json
+from guardrails.validator_base import (ErrorSpan, FailResult, PassResult,
+                                       ValidationResult, Validator,
+                                       register_validator)
+
 
 @register_validator(name="guardrails/toxic_language", data_type="string")
 class ToxicLanguage(Validator):
@@ -104,7 +100,7 @@ class ToxicLanguage(Validator):
         # with confidence higher than the threshold
         pred_labels = []
         if value:
-            results = self._inference(value, {})
+            results = self._inference(value)
             if results:
                 results = cast(List[List[Dict[str, Any]]], results)
                 for label, score in results.items():
@@ -178,13 +174,13 @@ class ToxicLanguage(Validator):
         raise ValueError("validation_method must be 'sentence' or 'full'.")
 
     def _inference_local(
-        self, value: str, metadata: Dict[str, Any]
+        self, value: str
     ) -> ValidationResult:
         """Local inference method for the toxic language validator."""
         return self._model.predict(value)
 
     def _inference_remote(
-        self, value: str, metadata: Dict[str, Any]=None
+        self, value: str
     ) -> ValidationResult:
         """Remote inference method for the toxic language validator."""
         request_body = {
