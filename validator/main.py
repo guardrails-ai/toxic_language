@@ -159,3 +159,19 @@ class ToxicLanguage(Validator):
         if self._validation_method == "full":
             return self.validate_full_text(value, metadata)
         raise ValueError("validation_method must be 'sentence' or 'full'.")
+
+    def _inference_local(self, value: str, metadata: Dict[str, Any]) -> ValidationResult:
+        """Local inference method for the toxic language validator."""
+        return self.get_toxicity(value)
+
+    def _inference_remote(self, value: str, metadata: Dict[str, Any]) -> ValidationResult:
+        """Remote inference method for the toxic language validator."""
+        request_body = {
+            "model_name": "unbiased-small",
+            "text": value,
+            "threshold": self._threshold,
+            "validation_method": self._validation_method,
+        }
+
+        response = self._hub_inference_request(request_body)
+        return response
