@@ -198,6 +198,17 @@ class ToxicLanguage(Validator):
         return response
 
     def get_error_spans(self, original: str, fixed: str) -> List[ErrorSpan]:
+        """Generate error spans to display in failresult (if they exist). Error
+        spans show the character level range of text that has failed validation.
+
+        Args:
+            original (str): The input string
+            fixed (str): The 'validated' output string
+
+        Returns:
+            List[ErrorSpan]: A list of ErrorSpans to represent validation failures
+            over the character sequence.
+        """
         differ = difflib.Differ()
         diffs = list(differ.compare(original, fixed))
         error_spans = []
