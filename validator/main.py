@@ -1,15 +1,18 @@
+import difflib
 from typing import Any, Callable, Dict, List, Optional, Union, cast
 
+import detoxify
 import nltk
+import torch
 from guardrails.validator_base import (
+    ErrorSpan,
     FailResult,
     PassResult,
     ValidationResult,
     Validator,
     register_validator,
 )
-import detoxify
-import torch
+
 
 @register_validator(name="guardrails/toxic_language", data_type="string")
 class ToxicLanguage(Validator):
@@ -53,20 +56,21 @@ class ToxicLanguage(Validator):
         threshold: float = 0.5,
         validation_method: str = "sentence",
         device: Optional[Union[str, int]] = "cpu",
-        model_name: Optional[str] = "unbiased-small", 
+        model_name: Optional[str] = "unbiased-small",
         on_fail: Union[Callable[..., Any], None] = None,
         **kwargs,
     ):
         super().__init__(
             on_fail, threshold=threshold, validation_method=validation_method, **kwargs
         )
-        
+
         self._threshold = float(threshold)
         if validation_method not in ["sentence", "full"]:
             raise ValueError("validation_method must be 'sentence' or 'full'.")
         self._validation_method = validation_method
         # Define the model, pipeline and labels
-        self._model = detoxify.Detoxify(model_name, device=torch.device(device))
+        if self.use_local:
+            self._model = detoxify.Detoxify(model_name, device=torch.device(device))
         self._labels = [
             "toxicity",
             "severe_toxicity",
@@ -95,7 +99,7 @@ class ToxicLanguage(Validator):
         # with confidence higher than the threshold
         pred_labels = []
         if value:
-            results = self._model.predict(value)
+            results = self._inference(value, {})
             if results:
                 results = cast(List[List[Dict[str, Any]]], results)
                 for label, score in results.items():
@@ -106,46 +110,54 @@ class ToxicLanguage(Validator):
     def validate_each_sentence(
         self, value: str, metadata: Dict[str, Any]
     ) -> ValidationResult:
-        """Validate that each sentence in the generated text is toxic."""
-
-        # Split the value into sentences using nltk sentence tokenizer.
         sentences = nltk.sent_tokenize(value)
 
-        unsupported_sentences, supported_sentences = [], []
+        toxic_sentences = []
+        non_toxic_sentences = []
+
         for sentence in sentences:
             if sentence:
                 pred_labels = self.get_toxicity(sentence)
                 if pred_labels:
-                    unsupported_sentences.append(sentence)
+                    toxic_sentences.append(sentence)
                 else:
-                    supported_sentences.append(sentence)
+                    non_toxic_sentences.append(sentence)
 
-        if unsupported_sentences:
-            unsupported_sentences = "- " + "\n- ".join(unsupported_sentences)
+        if toxic_sentences:
+            fixed_text = " ".join(non_toxic_sentences)
+            error_spans = self.get_error_spans(value, fixed_text)
+            toxic_sentences_text = "- " + "\n- ".join(toxic_sentences)
             return FailResult(
                 metadata=metadata,
                 error_message=(
                     f"The following sentences in your response "
                     "were found to be toxic:\n"
-                    f"\n{unsupported_sentences}"
+                    f"\n{toxic_sentences_text}"
                 ),
-                fix_value="\n".join(supported_sentences),
+                fix_value=fixed_text,
+                error_spans=error_spans,
             )
         return PassResult(metadata=metadata)
 
     def validate_full_text(
         self, value: str, metadata: Dict[str, Any]
     ) -> ValidationResult:
-        """Validate that the entire generated text is toxic."""
-
         pred_labels = self.get_toxicity(value)
         if pred_labels:
+            error_spans = [
+                ErrorSpan(
+                    start=0,
+                    end=len(value),
+                    reason=f"Toxic content detected: {', '.join(pred_labels)}",
+                )
+            ]
             return FailResult(
                 metadata=metadata,
                 error_message=(
-                    "The generated text was found to be:\n" + ",".join(pred_labels)
+                    "The generated text was found to be:\n" + ", ".join(pred_labels)
                 ),
                 fix_value="",
+                error_spans=error_spans,
             )
         return PassResult()
 
@@ -160,11 +172,15 @@ class ToxicLanguage(Validator):
             return self.validate_full_text(value, metadata)
         raise ValueError("validation_method must be 'sentence' or 'full'.")
 
-    def _inference_local(self, value: str, metadata: Dict[str, Any]) -> ValidationResult:
+    def _inference_local(
+        self, value: str, metadata: Dict[str, Any]
+    ) -> ValidationResult:
         """Local inference method for the toxic language validator."""
-        return self.get_toxicity(value)
+        return self._model.predict(value)
 
-    def _inference_remote(self, value: str, metadata: Dict[str, Any]) -> ValidationResult:
+    def _inference_remote(
+        self, value: str, metadata: Dict[str, Any]
+    ) -> ValidationResult:
         """Remote inference method for the toxic language validator."""
         request_body = {
             "model_name": "unbiased-small",
@@ -175,3 +191,60 @@ class ToxicLanguage(Validator):
 
         response = self._hub_inference_request(request_body)
         return response
+
+    def get_error_spans(self, original: str, fixed: str) -> List[ErrorSpan]:
+        differ = difflib.Differ()
+        diffs = list(differ.compare(original, fixed))
+        error_spans = []
+        if diffs:
+            start = None
+            end = None
+            for i, diff in enumerate(diffs):
+                if diff.startswith('- '):
+                    if start is None:
+                        start = i
+                    end = i + 1
+                else:
+                    if start is not None and end is not None:
+                        error_spans.append(
+                            ErrorSpan(
+                                start=start,
+                                end=end,
+                                reason=f"Toxic content detected in {start}:{end}",
+                            )
+                        )
+                        start = None
+                        end = None
+            
+            if start is not None and end is not None:
+                error_spans.append(
+                    ErrorSpan(
+                        start=start, 
+                        end=end, 
+                        reason=f"Toxic content detected in {start}:{end}"
+                    )
+                )
+
+        # Adjust indices to match the original string
+        adjusted_spans = []
+        original_index = 0
+        diff_index = 0
+        for span in error_spans:
+            while diff_index < span.start:
+                if not diffs[diff_index].startswith('+ '):
+                    original_index += 1
+                diff_index += 1
+            start = original_index
+            while diff_index < span.end:
+                if not diffs[diff_index].startswith('+ '):
+                    original_index += 1
+                diff_index += 1
+            adjusted_spans.append(
+                ErrorSpan(
+                    start=start,
+                    end=original_index,
+                    reason=span.reason.replace(str(span.start), str(start)).replace(str(span.end), str(original_index))
+                )
+            )
+
+        return adjusted_spans
