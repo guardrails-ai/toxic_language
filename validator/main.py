@@ -12,7 +12,7 @@ from guardrails.validator_base import (
     Validator,
     register_validator,
 )
-
+import json
 
 @register_validator(name="guardrails/toxic_language", data_type="string")
 class ToxicLanguage(Validator):
@@ -58,19 +58,24 @@ class ToxicLanguage(Validator):
         device: Optional[Union[str, int]] = "cpu",
         model_name: Optional[str] = "unbiased-small",
         on_fail: Union[Callable[..., Any], None] = None,
+        use_local: bool = True,
+        validation_endpoint: str = None,
         **kwargs,
     ):
         super().__init__(
-            on_fail, threshold=threshold, validation_method=validation_method, **kwargs
+            use_local=use_local,
+            validation_endpoint=validation_endpoint,
+            on_fail=on_fail,
+            threshold=threshold,
+            validation_method=validation_method,
+            **kwargs,
         )
 
         self._threshold = float(threshold)
         if validation_method not in ["sentence", "full"]:
             raise ValueError("validation_method must be 'sentence' or 'full'.")
         self._validation_method = validation_method
-        # Define the model, pipeline and labels
-        if self.use_local:
-            self._model = detoxify.Detoxify(model_name, device=torch.device(device))
+        self._model = detoxify.Detoxify(model_name, device=torch.device(device))
         self._labels = [
             "toxicity",
             "severe_toxicity",
@@ -179,7 +184,7 @@ class ToxicLanguage(Validator):
         return self._model.predict(value)
 
     def _inference_remote(
-        self, value: str, metadata: Dict[str, Any]
+        self, value: str, metadata: Dict[str, Any]=None
     ) -> ValidationResult:
         """Remote inference method for the toxic language validator."""
         request_body = {
@@ -188,7 +193,7 @@ class ToxicLanguage(Validator):
             "threshold": self._threshold,
             "validation_method": self._validation_method,
         }
-
+        request_body = json.dumps(request_body, ensure_ascii=False)
         response = self._hub_inference_request(request_body)
         return response
 
@@ -200,7 +205,7 @@ class ToxicLanguage(Validator):
             start = None
             end = None
             for i, diff in enumerate(diffs):
-                if diff.startswith('- '):
+                if diff.startswith("- "):
                     if start is None:
                         start = i
                     end = i + 1
@@ -215,13 +220,13 @@ class ToxicLanguage(Validator):
                         )
                         start = None
                         end = None
-            
+
             if start is not None and end is not None:
                 error_spans.append(
                     ErrorSpan(
-                        start=start, 
-                        end=end, 
-                        reason=f"Toxic content detected in {start}:{end}"
+                        start=start,
+                        end=end,
+                        reason=f"Toxic content detected in {start}:{end}",
                     )
                 )
 
@@ -231,19 +236,21 @@ class ToxicLanguage(Validator):
         diff_index = 0
         for span in error_spans:
             while diff_index < span.start:
-                if not diffs[diff_index].startswith('+ '):
+                if not diffs[diff_index].startswith("+ "):
                     original_index += 1
                 diff_index += 1
             start = original_index
             while diff_index < span.end:
-                if not diffs[diff_index].startswith('+ '):
+                if not diffs[diff_index].startswith("+ "):
                     original_index += 1
                 diff_index += 1
             adjusted_spans.append(
                 ErrorSpan(
                     start=start,
                     end=original_index,
-                    reason=span.reason.replace(str(span.start), str(start)).replace(str(span.end), str(original_index))
+                    reason=span.reason.replace(str(span.start), str(start)).replace(
+                        str(span.end), str(original_index)
+                    ),
                 )
             )
 
