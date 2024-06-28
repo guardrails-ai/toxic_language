@@ -127,7 +127,7 @@ class ToxicLanguage(Validator):
         if toxic_sentences:
             fixed_text = " ".join(non_toxic_sentences)
             error_spans = self.get_error_spans(value, fixed_text)
-            toxic_sentences_text = "- " + "\n- ".join(toxic_sentences)
+            toxic_sentences_text = "\n- ".join(toxic_sentences)
             return FailResult(
                 metadata=metadata,
                 error_message=(
