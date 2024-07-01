@@ -9,7 +9,7 @@ class InferlessPythonModel:
     def initialize(self):
         model_name = "unbiased-small"
         self.validation_method = "sentence"
-        self.device = torch.device("cpu")
+        self.device = torch.device("cuda")
         self._model = detoxify.Detoxify(model_name, device=self.device)
         self._labels = [
             "toxicity",
