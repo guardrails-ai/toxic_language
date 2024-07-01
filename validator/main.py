@@ -69,8 +69,6 @@ class ToxicLanguage(Validator):
             validation_method=validation_method,
             **kwargs,
         )
-        self.use_local = kwargs.get("use_local", None)
-        self.validation_endpoint = kwargs.get("validation_endpoint", None)
         self._threshold = float(threshold)
         if validation_method not in ["sentence", "full"]:
             raise ValueError("validation_method must be 'sentence' or 'full'.")
