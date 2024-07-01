@@ -120,7 +120,7 @@ class ToxicLanguage(Validator):
 
         for sentence in sentences:
             if sentence:
-                pred_labels = self.get_toxicity(sentence)
+                pred_labels = self._inference(sentence)
                 if pred_labels:
                     toxic_sentences.append(sentence)
                 else:
@@ -145,7 +145,7 @@ class ToxicLanguage(Validator):
     def validate_full_text(
         self, value: str, metadata: Dict[str, Any]
     ) -> ValidationResult:
-        pred_labels = self.get_toxicity(value)
+        pred_labels = self._inference(value)
         if pred_labels:
             error_spans = [
                 ErrorSpan(
@@ -177,7 +177,7 @@ class ToxicLanguage(Validator):
 
     def _inference_local(self, value: str) -> ValidationResult:
         """Local inference method for the toxic language validator."""
-        return self._model.predict(value)
+        return self.get_toxicity(value)
 
     def _inference_remote(self, value: str) -> ValidationResult:
         """Remote inference method for the toxic language validator."""
@@ -189,7 +189,7 @@ class ToxicLanguage(Validator):
         }
         request_body = json.dumps(request_body, ensure_ascii=False)
         response = self._hub_inference_request(request_body)
-        return response
+        return response["result"]
 
     def get_error_spans(self, original: str, fixed: str) -> List[ErrorSpan]:
         """Generate error spans to display in failresult (if they exist). Error
