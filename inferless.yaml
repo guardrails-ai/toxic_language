@@ -34,10 +34,6 @@ env:
 secrets:
   # Add your secret ids here you can find it by running `inferless secrets list`
   # - 65723205-ce21-4392-a10b-3tf00c58988c
-optional:
-  # you can update file names here
-  input_file_name: input.json
-  output_file_name: output.json
 io_schema: true
 model_url: https://github.com/guardrails-ai/toxic_language
 provider: GITHUB

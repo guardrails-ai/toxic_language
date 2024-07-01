@@ -1,28 +1,10 @@
 INPUT_SCHEMA = {
-  "inputs": [
-    {
-      "data": [
-        "I have a problem with my iphone that needs to be resolved asap!!"
-      ],
-      "name": "text",
-      "shape": [
-        1
-      ],
-      "datatype": "BYTES"
+    "text": {
+        "example": [
+            "I hate you, I will smack you, this is a toxic first sentence. But this is a friendly sentence."
+        ],
+        "shape": [1],
+        "datatype": "STRING",
+        "required": True,
     },
-    {
-      "data": [
-        "urgent",
-        "not urgent",
-        "phone",
-        "tablet",
-        "computer"
-      ],
-      "name": "candidate_labels",
-      "shape": [
-        5
-      ],
-      "datatype": "BYTES"
-    }
-  ]
 }
