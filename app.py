@@ -34,7 +34,7 @@ class InferlessPythonModel:
                     if label in self._labels and score > self.threshold:
                         pred_labels.append(label)
         
-        return pred_labels
+        return {"result": pred_labels}
 
     def finalize(self):
         pass
