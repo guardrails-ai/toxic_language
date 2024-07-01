@@ -102,7 +102,7 @@ class ToxicLanguage(Validator):
         # with confidence higher than the threshold
         pred_labels = []
         if value:
-            results = self._inference(value)
+            results = self._model(value)
             if results:
                 results = cast(List[List[Dict[str, Any]]], results)
                 for label, score in results.items():
@@ -182,10 +182,8 @@ class ToxicLanguage(Validator):
     def _inference_remote(self, value: str) -> ValidationResult:
         """Remote inference method for the toxic language validator."""
         request_body = {
-            "model_name": "unbiased-small",
             "text": value,
             "threshold": self._threshold,
-            "validation_method": self._validation_method,
         }
         request_body = json.dumps(request_body, ensure_ascii=False)
         response = self._hub_inference_request(request_body)
