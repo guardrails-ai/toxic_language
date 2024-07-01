@@ -7,4 +7,13 @@ INPUT_SCHEMA = {
         "datatype": "STRING",
         "required": True,
     },
+"threshold": {
+    "example": [
+        0.5
+],
+"shape": [1],
+"datatype": "FP32",
+"required": True,
+},
+
 }
