@@ -1,0 +1,10 @@
+build:
+  system_packages:
+  python_packages:
+    - "spacy"
+    - "cupy-cuda12x"
+    - "torch"
+    - "transformers"
+    - "nltk"
+    - "torch"
+    - "detoxify"
