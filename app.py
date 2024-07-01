@@ -8,7 +8,6 @@ class InferlessPythonModel:
 
     def initialize(self):
         model_name = "unbiased-small"
-        self.threshold = 0.5
         self.validation_method = "sentence"
         self.device = torch.device("cpu")
         self._model = detoxify.Detoxify(model_name, device=self.device)
@@ -25,13 +24,14 @@ class InferlessPythonModel:
         
     def infer(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         text = inputs["text"]
+        threshold = inputs["threshold"]
         
         pred_labels = []
         if text:
             results = self._model.predict(text)
             if results:
                 for label, score in results.items():
-                    if label in self._labels and score > self.threshold:
+                    if label in self._labels and score > threshold:
                         pred_labels.append(label)
         
         return {"result": pred_labels}
