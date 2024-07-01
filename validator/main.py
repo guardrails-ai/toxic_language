@@ -5,12 +5,19 @@ from typing import Any, Callable, Dict, List, Optional, Union, cast
 import detoxify
 import nltk
 import torch
-from guardrails.validator_base import (ErrorSpan, FailResult, PassResult,
-                                       ValidationResult, Validator,
-                                       register_validator)
+from guardrails.validator_base import (
+    ErrorSpan,
+    FailResult,
+    PassResult,
+    ValidationResult,
+    Validator,
+    register_validator,
+)
 
 
-@register_validator(name="guardrails/toxic_language", data_type="string")
+@register_validator(
+    name="guardrails/toxic_language", data_type="string", has_guardrails_endpoint=True
+)
 class ToxicLanguage(Validator):
     """Validates that the generated text is toxic.
 
@@ -54,19 +61,16 @@ class ToxicLanguage(Validator):
         device: Optional[Union[str, int]] = "cpu",
         model_name: Optional[str] = "unbiased-small",
         on_fail: Union[Callable[..., Any], None] = None,
-        use_local: bool = True,
-        validation_endpoint: str = None,
         **kwargs,
     ):
         super().__init__(
-            use_local=use_local,
-            validation_endpoint=validation_endpoint,
             on_fail=on_fail,
             threshold=threshold,
             validation_method=validation_method,
             **kwargs,
         )
-
+        self.use_local = kwargs.get("use_local", None)
+        self.validation_endpoint = kwargs.get("validation_endpoint", None)
         self._threshold = float(threshold)
         if validation_method not in ["sentence", "full"]:
             raise ValueError("validation_method must be 'sentence' or 'full'.")
@@ -173,15 +177,11 @@ class ToxicLanguage(Validator):
             return self.validate_full_text(value, metadata)
         raise ValueError("validation_method must be 'sentence' or 'full'.")
 
-    def _inference_local(
-        self, value: str
-    ) -> ValidationResult:
+    def _inference_local(self, value: str) -> ValidationResult:
         """Local inference method for the toxic language validator."""
         return self._model.predict(value)
 
-    def _inference_remote(
-        self, value: str
-    ) -> ValidationResult:
+    def _inference_remote(self, value: str) -> ValidationResult:
         """Remote inference method for the toxic language validator."""
         request_body = {
             "model_name": "unbiased-small",
