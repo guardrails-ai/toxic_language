@@ -32,7 +32,7 @@ class ValidatorTestObject(BaseModel):
     ],
 )
 def test_happy_path(value):
-    # Create a guard from the pydantic model
+    # Create a guard from the pydantic model    
     validator = ToxicLanguage(
         model_name="unbiased",
         threshold=0.5,

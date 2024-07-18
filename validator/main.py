@@ -182,12 +182,27 @@ class ToxicLanguage(Validator):
     def _inference_remote(self, value: str) -> ValidationResult:
         """Remote inference method for the toxic language validator."""
         request_body = {
-            "text": value,
-            "threshold": self._threshold,
+            "inputs": [
+                {
+                    "name": "text",
+                    "shape": [1],
+                    "data": [value],
+                    "datatype": "BYTES"
+                },
+                {
+                    "name": "threshold",
+                    "shape": [1],
+                    "data": [self._threshold],
+                    "datatype": "FP32"
+                }
+            ]
         }
-        request_body = json.dumps(request_body, ensure_ascii=False)
-        response = self._hub_inference_request(request_body)
-        return response["result"]
+        response = self._hub_inference_request(json.dumps(request_body), self.validation_endpoint)
+        if not response or "outputs" not in response:
+            raise ValueError("Invalid response from remote inference", response)
+        outputs = response["outputs"][0]["data"][0]
+
+        return outputs
 
     def get_error_spans(self, original: str, fixed: str) -> List[ErrorSpan]:
         """Generate error spans to display in failresult (if they exist). Error
