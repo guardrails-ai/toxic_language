@@ -102,7 +102,7 @@ class ToxicLanguage(Validator):
         # with confidence higher than the threshold
         pred_labels = []
         if value:
-            results = self._model(value)
+            results = self._model.predict(value)
             if results:
                 results = cast(List[List[Dict[str, Any]]], results)
                 for label, score in results.items():
@@ -200,6 +200,7 @@ class ToxicLanguage(Validator):
         response = self._hub_inference_request(json.dumps(request_body), self.validation_endpoint)
         if not response or "outputs" not in response:
             raise ValueError("Invalid response from remote inference", response)
+        
         outputs = response["outputs"][0]["data"][0]
 
         return outputs
