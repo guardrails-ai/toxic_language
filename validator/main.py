@@ -2,6 +2,7 @@ from typing import Any, Callable, Dict, List, Optional, Union, cast
 
 import nltk
 from guardrails.validator_base import (
+    ErrorSpan,
     FailResult,
     PassResult,
     ValidationResult,
@@ -122,6 +123,18 @@ class ToxicLanguage(Validator):
 
         if unsupported_sentences:
             unsupported_sentences = "- " + "\n- ".join(unsupported_sentences)
+            
+            error_spans = []
+            char_index = 0
+            
+            for i, senence in enumerate(sentences):
+                length = len(sentence)
+                error_spans.append(ErrorSpan(
+                    start=char_index,
+                    end=char_index + len(sentence),
+                    message="Toxic language detected",
+                ))
+                char_index += length + 1
             return FailResult(
                 metadata=metadata,
                 error_message=(
@@ -130,6 +143,7 @@ class ToxicLanguage(Validator):
                     f"\n{unsupported_sentences}"
                 ),
                 fix_value="\n".join(supported_sentences),
+                error_spans=error_spans,
             )
         return PassResult(metadata=metadata)
 
@@ -140,12 +154,14 @@ class ToxicLanguage(Validator):
 
         pred_labels = self.get_toxicity(value)
         if pred_labels:
+            error_spans = [ErrorSpan(start=0, end=len(value), message="Toxic language detected")]
             return FailResult(
                 metadata=metadata,
                 error_message=(
                     "The generated text was found to be:\n" + ",".join(pred_labels)
                 ),
                 fix_value="",
+                error_spans=error_spans,
             )
         return PassResult()
 
