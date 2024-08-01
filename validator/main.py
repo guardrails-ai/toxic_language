@@ -114,7 +114,7 @@ class ToxicLanguage(Validator):
 
         unsupported_sentences, supported_sentences = [], []
         error_spans: List[ErrorSpan] = []
-        start_index = 0
+        char_index = 0
 
         for sentence in sentences:
             pred_labels = self.get_toxicity(sentence)
@@ -122,14 +122,14 @@ class ToxicLanguage(Validator):
                 unsupported_sentences.append(sentence)
                 error_spans.append(
                     ErrorSpan(
-                        start=start_index,
-                        end=start_index + len(sentence),
+                        start=char_index,
+                        end=char_index + len(sentence),
                         reason="Toxic language detected",
                     )
                 )
             else:
                 supported_sentences.append(sentence)
-            start_index += len(sentence) + 1
+            char_index += len(sentence) + 1  
 
         if unsupported_sentences:
             unsupported_sentences_text = "- " + "\n- ".join(unsupported_sentences)
@@ -152,7 +152,20 @@ class ToxicLanguage(Validator):
 
         pred_labels = self.get_toxicity(value)
         if pred_labels:
-            error_spans = [ErrorSpan(start=0, end=len(value), reason="Toxic language detected")]
+            sentences = nltk.sent_tokenize(value)
+            error_spans = []
+            char_index = 0
+            for sentence in sentences:
+                if self.get_toxicity(sentence):
+                    error_spans.append(
+                        ErrorSpan(
+                            start=char_index,
+                            end=char_index + len(sentence),
+                            reason="Toxic language detected",
+                        )
+                    )
+                char_index += len(sentence) + 1 
+
             return FailResult(
                 metadata=metadata,
                 error_message=(
