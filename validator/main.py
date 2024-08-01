@@ -2,6 +2,7 @@ from typing import Any, Callable, Dict, List, Optional, Union, cast
 
 import nltk
 from guardrails.validator_base import (
+    ErrorSpan,
     FailResult,
     PassResult,
     ValidationResult,
@@ -112,24 +113,35 @@ class ToxicLanguage(Validator):
         sentences = nltk.sent_tokenize(value)
 
         unsupported_sentences, supported_sentences = [], []
+        error_spans: List[ErrorSpan] = []
+        char_index = 0
+
         for sentence in sentences:
-            if sentence:
-                pred_labels = self.get_toxicity(sentence)
-                if pred_labels:
-                    unsupported_sentences.append(sentence)
-                else:
-                    supported_sentences.append(sentence)
+            pred_labels = self.get_toxicity(sentence)
+            if pred_labels:
+                unsupported_sentences.append(sentence)
+                error_spans.append(
+                    ErrorSpan(
+                        start=char_index,
+                        end=char_index + len(sentence),
+                        reason="Toxic language detected",
+                    )
+                )
+            else:
+                supported_sentences.append(sentence)
+            char_index += len(sentence) + 1  
 
         if unsupported_sentences:
-            unsupported_sentences = "- " + "\n- ".join(unsupported_sentences)
+            unsupported_sentences_text = "- " + "\n- ".join(unsupported_sentences)
             return FailResult(
                 metadata=metadata,
                 error_message=(
                     f"The following sentences in your response "
                     "were found to be toxic:\n"
-                    f"\n{unsupported_sentences}"
+                    f"\n{unsupported_sentences_text}"
                 ),
                 fix_value="\n".join(supported_sentences),
+                error_spans=error_spans,
             )
         return PassResult(metadata=metadata)
 
@@ -140,12 +152,27 @@ class ToxicLanguage(Validator):
 
         pred_labels = self.get_toxicity(value)
         if pred_labels:
+            sentences = nltk.sent_tokenize(value)
+            error_spans = []
+            char_index = 0
+            for sentence in sentences:
+                if self.get_toxicity(sentence):
+                    error_spans.append(
+                        ErrorSpan(
+                            start=char_index,
+                            end=char_index + len(sentence),
+                            reason="Toxic language detected",
+                        )
+                    )
+                char_index += len(sentence) + 1 
+
             return FailResult(
                 metadata=metadata,
                 error_message=(
                     "The generated text was found to be:\n" + ",".join(pred_labels)
                 ),
                 fix_value="",
+                error_spans=error_spans,
             )
         return PassResult()
 
