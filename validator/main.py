@@ -129,7 +129,7 @@ class ToxicLanguage(Validator):
                 )
             else:
                 supported_sentences.append(sentence)
-            start_index += len(sentence) + 1  # +1 for the space or punctuation
+            start_index += len(sentence) + 1
 
         if unsupported_sentences:
             unsupported_sentences_text = "- " + "\n- ".join(unsupported_sentences)
