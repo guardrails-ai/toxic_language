@@ -73,7 +73,8 @@ class ToxicLanguage(Validator):
         if validation_method not in ["sentence", "full"]:
             raise ValueError("validation_method must be 'sentence' or 'full'.")
         self._validation_method = validation_method
-        self._model = detoxify.Detoxify(model_name, device=torch.device(device))
+        if self.use_local: 
+            self._model = detoxify.Detoxify(model_name, device=torch.device(device))
         self._labels = [
             "toxicity",
             "severe_toxicity",
