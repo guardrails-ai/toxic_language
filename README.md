@@ -10,7 +10,7 @@
 ## Description
 
 ### Intended Use
-This validator uses the pre-trained multi-label model from HuggingFace - `unitary/unbiased-toxic-roberta` to check whether the generated text is toxic. If the model predicts any label of: `toxicity`, `severe_toxicity`, `obscene`, `threat`, `insult`, `identity_attack`, or `sexual_explicit` with confidence higher than the specified threshold, the validator fails and returns the generated text with the toxic sentences / entire text removed. Else the validator returns the generated text as it is.
+This validator uses the pre-trained multi-label model from Detoxify to check whether the generated text is toxic. If the model predicts any label of: `toxicity`, `severe_toxicity`, `obscene`, `threat`, `insult`, `identity_attack`, or `sexual_explicit` with confidence higher than the specified threshold, the validator fails and returns the generated text with the toxic sentences / entire text removed. Else the validator returns the generated text as it is.
 
 If validation_method is `sentence`, the validator will remove the sentences that are predicted to be toxic and return the remaining sentences. If validation_method is `full`, the validator will remove the entire text if the prediction is deemed toxic and return an empty string.
 
