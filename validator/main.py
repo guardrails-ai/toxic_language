@@ -121,7 +121,7 @@ class ToxicLanguage(Validator):
         char_index = 0
 
         for sentence in sentences:
-            pred_labels = self.get_toxicity(sentence)
+            pred_labels = self._inference(sentence)
             if pred_labels:
                 unsupported_sentences.append(sentence)
                 error_spans.append(
@@ -159,7 +159,7 @@ class ToxicLanguage(Validator):
             error_spans = []
             char_index = 0
             for sentence in sentences:
-                if self.get_toxicity(sentence):
+                if self._inference(sentence):
                     error_spans.append(
                         ErrorSpan(
                             start=char_index,
