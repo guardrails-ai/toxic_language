@@ -119,15 +119,18 @@ class ToxicLanguage(Validator):
         error_spans: List[ErrorSpan] = []
         char_index = 0
 
-        for sentence in sentences:
-            pred_labels = self._inference(sentence)
+        sentence_predictions = self._inference(sentences)
+
+        for idx, sentence in enumerate(sentences):
+            pred_labels = sentence_predictions[idx]
+
             if pred_labels:
                 unsupported_sentences.append(sentence)
                 error_spans.append(
                     ErrorSpan(
                         start=char_index,
                         end=char_index + len(sentence),
-                        reason="Toxic language detected",
+                        reason=f"Toxic language detected: {', '.join(pred_labels)}",
                     )
                 )
             else:
@@ -149,58 +152,37 @@ class ToxicLanguage(Validator):
             )
         return PassResult(metadata=metadata)
 
-    def validate_full_text(
-        self, value: str, metadata: Dict[str, Any]
-    ) -> ValidationResult:
-        pred_labels = self._inference(value)
-        if pred_labels:
-            sentences = nltk.sent_tokenize(value)
-            error_spans = []
-            char_index = 0
-            for sentence in sentences:
-                if self._inference(sentence):
-                    error_spans.append(
-                        ErrorSpan(
-                            start=char_index,
-                            end=char_index + len(sentence),
-                            reason="Toxic language detected",
-                        )
-                    )
-                char_index += len(sentence) + 1 
-
-            return FailResult(
-                metadata=metadata,
-                error_message=(
-                    "The generated text was found to be:\n" + ", ".join(pred_labels)
-                ),
-                fix_value="",
-                error_spans=error_spans,
-            )
-        return PassResult()
-
     def validate(self, value: str, metadata: Dict[str, Any]) -> ValidationResult:
         """Validation method for the toxic language validator."""
         if not value:
             raise ValueError("Value cannot be empty.")
 
-        if self._validation_method == "sentence":
-            return self.validate_each_sentence(value, metadata)
-        if self._validation_method == "full":
-            return self.validate_full_text(value, metadata)
-        raise ValueError("validation_method must be 'sentence' or 'full'.")
+        return self.validate_each_sentence(value, metadata)
 
-    def _inference_local(self, value: str) -> ValidationResult:
+    def _inference_local(self, value: str | list) -> ValidationResult:
         """Local inference method for the toxic language validator."""
-        return self.get_toxicity(value)
 
-    def _inference_remote(self, value: str) -> ValidationResult:
+        if isinstance(value, str):
+            value = [value]
+        predictions = []
+        for text in value:
+            pred_labels = self.get_toxicity(text)
+            predictions.append(pred_labels)
+        
+        return predictions
+
+    def _inference_remote(self, value: str | list) -> ValidationResult:
         """Remote inference method for the toxic language validator."""
+
+        if isinstance(value, str):
+            value = [value]
+
         request_body = {
             "inputs": [
                 {
                     "name": "text",
-                    "shape": [1],
-                    "data": [value],
+                    "shape": [len(value)],
+                    "data": value,
                     "datatype": "BYTES"
                 },
                 {
@@ -214,10 +196,9 @@ class ToxicLanguage(Validator):
         response = self._hub_inference_request(json.dumps(request_body), self.validation_endpoint)
         if not response or "outputs" not in response:
             raise ValueError("Invalid response from remote inference", response)
-        
-        outputs = response["outputs"][0]["data"][0]
 
-        return outputs
+        data = [output["data"][0] for output in response["outputs"]]
+        return data
 
     def get_error_spans(self, original: str, fixed: str) -> List[ErrorSpan]:
         """Generate error spans to display in failresult (if they exist). Error
