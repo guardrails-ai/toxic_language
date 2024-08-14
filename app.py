@@ -17,12 +17,12 @@ class InferenceData(BaseModel):
     datatype: str
 
 class InputRequest(BaseModel):
-    inputs: List[InputData]
+    inputs: List[InferenceData]
 
 class OutputResponse(BaseModel):
     modelname: str
     modelversion: str
-    outputs: List[OutputData]
+    outputs: List[InferenceData]
 
 @app.post("/validate", response_model=OutputResponse)
 async def check_toxicity(input_request: InputRequest):
@@ -43,7 +43,7 @@ async def check_toxicity(input_request: InputRequest):
         modelname="unbiased-small",
         modelversion="1",
         outputs=[
-            OutputData(
+            InferenceData(
                 name="result",
                 datatype="BYTES",
                 shape=[len(pred_labels)],
