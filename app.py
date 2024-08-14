@@ -1,42 +1,58 @@
-import json
-import torch
-import nltk
-from typing import Any, Dict, List
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import List, Union
 import detoxify
+import torch
+import json
 
-class InferlessPythonModel:
+app = FastAPI()
+# Initialize the detoxify model once
+device = "cpu"
+model = detoxify.Detoxify('unbiased-small', device=torch.device(device))
 
-    def initialize(self):
-        model_name = "unbiased-small"
-        self.validation_method = "sentence"
-        self.device = torch.device("cuda")
-        self._model = detoxify.Detoxify(model_name, device=self.device)
-        self._labels = [
-            "toxicity",
-            "severe_toxicity",
-            "obscene",
-            "threat",
-            "insult",
-            "identity_attack",
-            "sexual_explicit",
+class InferenceData(BaseModel):
+    name: str
+    shape: List[int]
+    data: Union[List[str], List[float]]
+    datatype: str
+
+class InputRequest(BaseModel):
+    inputs: List[InputData]
+
+class OutputResponse(BaseModel):
+    modelname: str
+    modelversion: str
+    outputs: List[OutputData]
+
+@app.post("/validate", response_model=OutputResponse)
+async def check_toxicity(input_request: InputRequest):
+    text = None
+    threshold = None
+    
+    for inp in input_request.inputs:
+        if inp.name == "text":
+            text = inp.data[0]
+        elif inp.name == "threshold":
+            threshold = float(inp.data[0])
+    
+    if text is None or threshold is None:
+        raise HTTPException(status_code=400, detail="Invalid input format")
+    results = model.predict(text)
+    pred_labels = [label for label, score in results.items() if score > threshold]
+    output_data = OutputResponse(
+        modelname="unbiased-small",
+        modelversion="1",
+        outputs=[
+            OutputData(
+                name="result",
+                datatype="BYTES",
+                shape=[len(pred_labels)],
+                data=[pred_labels]
+            )
         ]
-        nltk.download('punkt')
-        
-    def infer(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
-        text = inputs["text"]
-        threshold = inputs["threshold"]
-        
-        pred_labels = []
-        if text:
-            results = self._model.predict(text)
-            if results:
-                for label, score in results.items():
-                    if label in self._labels and score > threshold:
-                        pred_labels.append(label)
-        
-        return {"result": pred_labels if pred_labels else [""]}
-
-    def finalize(self):
-        pass
+    )
     
-    
+    print(f"Output data: {output_data}")
+    return output_data
+# Run the app with uvicorn
+# Save this script as app.py and run with: uvicorn app:app --reload
