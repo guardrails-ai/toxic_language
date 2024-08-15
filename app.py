@@ -1,42 +1,86 @@
-import json
-import torch
-import nltk
-from typing import Any, Dict, List
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import List
 import detoxify
+import torch
+import os
 
-class InferlessPythonModel:
+app = FastAPI()
+# Initialize the detoxify model once
+env = os.environ.get("env", "dev")
+torch_device = "cuda" if env == "prod" else "cpu"
+model = detoxify.Detoxify("unbiased-small", device=torch.device(torch_device))
 
-    def initialize(self):
-        model_name = "unbiased-small"
-        self.validation_method = "sentence"
-        self.device = torch.device("cuda")
-        self._model = detoxify.Detoxify(model_name, device=self.device)
-        self._labels = [
-            "toxicity",
-            "severe_toxicity",
-            "obscene",
-            "threat",
-            "insult",
-            "identity_attack",
-            "sexual_explicit",
-        ]
-        nltk.download('punkt')
-        
-    def infer(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
-        text = inputs["text"]
-        threshold = inputs["threshold"]
-        
-        pred_labels = []
-        if text:
-            results = self._model.predict(text)
-            if results:
-                for label, score in results.items():
-                    if label in self._labels and score > threshold:
-                        pred_labels.append(label)
-        
-        return {"result": pred_labels if pred_labels else [""]}
 
-    def finalize(self):
-        pass
-    
-    
+class InferenceData(BaseModel):
+    name: str
+    shape: List[int]
+    data: List
+    datatype: str
+
+
+class InputRequest(BaseModel):
+    inputs: List[InferenceData]
+
+
+class OutputResponse(BaseModel):
+    modelname: str
+    modelversion: str
+    outputs: List[InferenceData]
+
+
+@app.post("/validate", response_model=OutputResponse)
+async def check_toxicity(input_request: InputRequest):
+    threshold = None
+    for inp in input_request.inputs:
+        if inp.name == "text":
+            text_vals = inp.data
+        elif inp.name == "threshold":
+            threshold = float(inp.data[0])
+
+    if text_vals is None or threshold is None:
+        raise HTTPException(status_code=400, detail="Invalid input format")
+
+    return ToxicLanguage.infer(text_vals, threshold)
+
+
+class ToxicLanguage:
+    model_name = "unbiased-small"
+    validation_method = "sentence"
+    device = torch.device(torch_device)
+    model = detoxify.Detoxify(model_name, device=device)
+    labels = [
+        "toxicity",
+        "severe_toxicity",
+        "obscene",
+        "threat",
+        "insult",
+        "identity_attack",
+        "sexual_explicit",
+    ]
+
+    def infer(text_vals, threshold) -> OutputResponse:
+        outputs = []
+        for idx, text in enumerate(text_vals):
+            results = ToxicLanguage.model.predict(text)
+            pred_labels = [
+                label for label, score in results.items() if score > threshold
+            ]
+            outputs.append(
+                InferenceData(
+                    name=f"result{idx}",
+                    datatype="BYTES",
+                    shape=[len(pred_labels)],
+                    data=[pred_labels],
+                )
+            )
+
+        output_data = OutputResponse(
+            modelname="unbiased-small", modelversion="1", outputs=outputs
+        )
+
+        return output_data
+
+
+# Run the app with uvicorn
+# Save this script as app.py and run with: uvicorn app:app --reload
