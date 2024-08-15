@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import List, Union
+from typing import List
 import detoxify
 import torch
 import os
@@ -9,7 +9,8 @@ app = FastAPI()
 # Initialize the detoxify model once
 env = os.environ.get("env", "dev")
 torch_device = "cuda" if env == "prod" else "cpu"
-model = detoxify.Detoxify('unbiased-small', device=torch.device(torch_device))
+model = detoxify.Detoxify("unbiased-small", device=torch.device(torch_device))
+
 
 class InferenceData(BaseModel):
     name: str
@@ -17,13 +18,16 @@ class InferenceData(BaseModel):
     data: List
     datatype: str
 
+
 class InputRequest(BaseModel):
     inputs: List[InferenceData]
+
 
 class OutputResponse(BaseModel):
     modelname: str
     modelversion: str
     outputs: List[InferenceData]
+
 
 @app.post("/validate", response_model=OutputResponse)
 async def check_toxicity(input_request: InputRequest):
@@ -38,6 +42,7 @@ async def check_toxicity(input_request: InputRequest):
         raise HTTPException(status_code=400, detail="Invalid input format")
 
     return ToxicLanguage.infer(text_vals, threshold)
+
 
 class ToxicLanguage:
     model_name = "unbiased-small"
@@ -75,5 +80,7 @@ class ToxicLanguage:
         )
 
         return output_data
+
+
 # Run the app with uvicorn
 # Save this script as app.py and run with: uvicorn app:app --reload
