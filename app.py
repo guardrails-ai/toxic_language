@@ -52,7 +52,6 @@ async def check_toxicity(input_request: InputRequest):
         ]
     )
     
-    print(f"Output data: {output_data}")
     return output_data
 # Run the app with uvicorn
 # Save this script as app.py and run with: uvicorn app:app --reload
