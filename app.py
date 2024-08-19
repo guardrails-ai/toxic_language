@@ -29,6 +29,10 @@ class OutputResponse(BaseModel):
     outputs: List[InferenceData]
 
 
+@app.get("/")
+async def hello_world():
+    return "toxic_language"
+
 @app.post("/validate", response_model=OutputResponse)
 async def check_toxicity(input_request: InputRequest):
     threshold = None
