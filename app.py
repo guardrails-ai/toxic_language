@@ -9,6 +9,9 @@ app = FastAPI()
 # Initialize the detoxify model once
 env = os.environ.get("env", "dev")
 torch_device = "cuda" if env == "prod" else "cpu"
+
+print(f"Using torch device: {torch_device}")
+
 model = detoxify.Detoxify("unbiased-small", device=torch.device(torch_device))
 
 
@@ -80,6 +83,15 @@ class ToxicLanguage:
         )
 
         return output_data
+
+# Sagemaker specific endpoints
+@app.get("/ping")
+async def healtchcheck():
+    return {"status": "ok"}
+
+@app.post("/invocations", response_model=OutputResponse)
+async def check_toxicity_sagemaker(input_request: InputRequest):
+    return check_toxicity(input_request)
 
 
 # Run the app with uvicorn

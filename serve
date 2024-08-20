@@ -1,0 +1,43 @@
+#!/usr/bin/env python
+
+import multiprocessing
+import os
+import signal
+import subprocess
+import sys
+
+cpu_count = multiprocessing.cpu_count()
+
+model_server_timeout = os.environ.get('MODEL_SERVER_TIMEOUT', 60)
+model_server_workers = int(os.environ.get('MODEL_SERVER_WORKERS', cpu_count))
+
+def sigterm_handler(gunicorn_pid):
+    try:
+        os.kill(gunicorn_pid, signal.SIGTERM)
+    except OSError:
+        pass
+
+    sys.exit(0)
+
+def start_server():
+    print(f'Starting the inference server with {model_server_workers} workers.')
+
+    # Start Gunicorn to serve the FastAPI app
+    gunicorn = subprocess.Popen(['gunicorn',
+                                 '--timeout', str(model_server_timeout),
+                                 '-k', 'uvicorn.workers.UvicornWorker',
+                                 '-b', '0.0.0.0:8080',
+                                 '-w', str(model_server_workers),
+                                 'app:app'])
+
+    signal.signal(signal.SIGTERM, lambda a, b: sigterm_handler(gunicorn.pid))
+
+    # Wait for the Gunicorn process to exit
+    gunicorn.wait()
+
+    print('Inference server exiting')
+
+# The main routine just invokes the start function.
+
+if __name__ == '__main__':
+    start_server()
