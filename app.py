@@ -91,7 +91,7 @@ async def healtchcheck():
 
 @app.post("/invocations", response_model=OutputResponse)
 async def check_toxicity_sagemaker(input_request: InputRequest):
-    return check_toxicity(input_request)
+    return await check_toxicity(input_request)
 
 
 # Run the app with uvicorn
