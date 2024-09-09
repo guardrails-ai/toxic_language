@@ -69,19 +69,15 @@ Validation failed for field with errors: The following sentences in your respons
 # API Reference
 
 **`__init__(self, threshold=0.5, validation_method="sentence", on_fail="noop")`**
-<ul>
+
 
 Initializes a new instance of the Validator class.
 
 **Parameters:**
-
 - **`threshold`** _(float):_ The confidence threshold (model inference) for toxicity. Defaults to 0.5.
 - **`validation_method`** _(str):_ Whether to validate at the sentence level or over the full text. Must be one of `sentence` or `full`. Defaults to `sentence`
 - **`on_fail`** *(str, Callable):* The policy to enact when a validator fails. If `str`, must be one of `reask`, `fix`, `filter`, `refrain`, `noop`, `exception` or `fix_reask`. Otherwise, must be a function that is called when the validator fails.
 
-</ul>
-
-<br>
 
 **`__call__(self, value, metadata={}) -> ValidationResult`**
 
