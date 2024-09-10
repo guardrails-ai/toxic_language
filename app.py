@@ -1,40 +1,42 @@
 from fastapi import FastAPI, HTTPException
+from contextlib import contextmanager, asynccontextmanager
 from pydantic import BaseModel
 from typing import List
-import detoxify
-import torch
-import os
+from app_inference_spec import InferenceSpec, InputRequest, OutputResponse
 
-from app_model import InputRequest, OutputResponse, ToxicLanguage
+
+####################################################################
+# FastAPI Setup & Endpoints
+####################################################################
 
 app = FastAPI()
 
-toxic_language = ToxicLanguage()
-toxic_language.load()
+inference_spec = InferenceSpec()
+
+# Load the model once before the app starts 
+# Not using lifespan events as they don't support sync functions.
+@app.on_event("startup")
+def startup_event():
+    inference_spec.load()
 
 @app.post("/validate", response_model=OutputResponse)
-async def check_toxicity(input_request: InputRequest):
-    threshold = None
-    for inp in input_request.inputs:
-        if inp.name == "text":
-            text_vals = inp.data
-        elif inp.name == "threshold":
-            threshold = float(inp.data[0])
-
-    if text_vals is None or threshold is None:
-        raise HTTPException(status_code=400, detail="Invalid input format")
-
-    return toxic_language.infer(text_vals, threshold)
+def validate(input_request: InputRequest):
+    args, kwargs = inference_spec.process_request(input_request)
+    return inference_spec.infer(*args, **kwargs)
 
 
-# Sagemaker specific endpoints
+####################################################################
+# Sagemaker Specific Endpoints
+####################################################################
+
 @app.get("/ping")
 async def healtchcheck():
     return {"status": "ok"}
 
 @app.post("/invocations", response_model=OutputResponse)
-async def check_toxicity_sagemaker(input_request: InputRequest):
-    return await check_toxicity(input_request)
+def validate_sagemaker(input_request: InputRequest):
+    args, kwargs = inference_spec.process_request(input_request)
+    return inference_spec.infer(*args, **kwargs)
 
 
 # Run the app with uvicorn

@@ -12,16 +12,16 @@ logging_config:
 
 applications:
 - name: guardrails--toxic_language
-  route_prefix: /guardrails--toxic_language
+  route_prefix: /guardrails/toxic_language
   import_path: app_ray_serve:app
   runtime_env: {
     "pip": ["fastapi", "transformers", "torch", "torchvision", "detoxify"],
   }
   deployments:
-  - name: AppModel
+  - name: InferenceDeployment
     num_replicas: 1
     user_config:
-      version: 6
+      version: 14
   - name: Ingress
     user_config:
-      version: 6
+      version: 14

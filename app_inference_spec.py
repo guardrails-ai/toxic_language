@@ -5,12 +5,6 @@ import detoxify
 import torch
 import os
 
-# Initialize the detoxify model once
-env = os.environ.get("env", "dev")
-torch_device = "cuda" if env == "prod" else "cpu"
-
-print(f"Using torch device: {torch_device}")
-
 class InferenceData(BaseModel):
     name: str
     shape: List[int]
@@ -27,12 +21,13 @@ class OutputResponse(BaseModel):
     modelversion: str
     outputs: List[InferenceData]
 
-class ToxicLanguage:
-
+# Using same nomencalture as in Sagemaker classes
+class InferenceSpec:
     model = None
+    _instance = None
+
     model_name = "unbiased-small"
     validation_method = "sentence"
-    device = torch.device(torch_device)
     labels = [
         "toxicity",
         "severe_toxicity",
@@ -43,17 +38,43 @@ class ToxicLanguage:
         "sexual_explicit",
     ]
 
-    _instance = None
-
+    @property
+    def torch_device(self):
+        env = os.environ.get("env", "dev")
+        torch_device = "cuda" if env == "prod" else "cpu"
+        return torch_device
+    
     # Singleton pattern
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(ToxicLanguage, cls).__new__(cls)
+            cls._instance = super(InferenceSpec, cls).__new__(cls)
         return cls._instance
        
     def load(self):
-        self.model = detoxify.Detoxify("unbiased-small", device=torch.device(torch_device))
+        model_name = self.model_name
+        torch_device = self.torch_device
+        device = torch.device(torch_device)
 
+        print(f"Loading model {model_name} using device {torch_device}...")
+        self.model = detoxify.Detoxify(model_name, device=device)
+
+    def process_request(self, input_request: InputRequest, mode="generic"):
+        threshold = None
+        for inp in input_request.inputs:
+            if inp.name == "text":
+                text_vals = inp.data
+            elif inp.name == "threshold":
+                threshold = float(inp.data[0])
+
+        if text_vals is None or threshold is None:
+            raise HTTPException(status_code=400, detail="Invalid input format")
+        
+        # args, and kwargs that are passed to the infer method
+        args = (text_vals, threshold)
+        kwargs = {}
+        return args, kwargs
+
+    # combined method of inference & process response 
     def infer(self, text_vals, threshold) -> OutputResponse:
         outputs = []
         for idx, text in enumerate(text_vals):
