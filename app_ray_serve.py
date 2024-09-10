@@ -8,7 +8,7 @@ from ray.serve.handle import DeploymentHandle
 
 app = FastAPI()
 
-@serve.deployment
+@serve.deployment(num_replicas=1, ray_actor_options={"num_cpus": 1, "num_gpus": 1})
 class InferenceDeployment:
     def __init__(self):
         self.spec = InferenceSpec()
