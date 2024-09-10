@@ -16,6 +16,7 @@ applications:
   import_path: app_ray_serve:app
   runtime_env: {
     "pip": ["fastapi", "transformers", "torch", "torchvision", "detoxify"],
+    "working_dir": "https://github.com/guardrails-ai/toxic_language/archive/f208ad6aad6c4011a0e519de354e4a0f57b0c169.zip"
   }
   deployments:
   - name: InferenceDeployment
