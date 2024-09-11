@@ -1,75 +1,19 @@
 import pytest
+from guardrails.hub import ToxicLanguage
 from guardrails import Guard
-from validator import ToxicLanguage
-from pydantic import BaseModel, Field
 
-
-# Create a pydantic model with a field that uses the custom validator
-class ValidatorTestObject(BaseModel):
-    text: str = Field(
-        validators=[
-            ToxicLanguage(
-                threshold=0.5, validation_method="sentence", on_fail="exception"
-            )
-        ]
-    )
-
-
-# Test happy path
-@pytest.mark.parametrize(
-    "value",
-    [
-        """
-        {
-            "text": "What a lovely day it has been to roam around the city. I love it here!"
-        }
-        """,
-        """
-        {
-            "text": "The ice cream was so good, I could eat it all day!"
-        }
-        """,
-    ],
+guard = Guard().use(
+    ToxicLanguage, threshold=0.5, validation_method="sentence", on_fail="exception"
 )
-def test_happy_path(value):
-    # Create a guard from the pydantic model    
-    validator = ToxicLanguage(
-        model_name="unbiased",
-        threshold=0.5,
-        validation_method="sentence",
-        on_fail="exception",
-    )
-    response = validator.validate(value, metadata={})
-    print("Happy path response", response)
+# Test passing response (non-toxic content)
+def test_toxic_language_pass():
+    response = guard.validate("Love how you think and attack the problem. Great job!")
+    assert response.validation_passed is True
 
-    assert response.outcome == "pass"
-
-
-# Test fail path
-@pytest.mark.parametrize(
-    "value",
-    [
-        """
-        {
-            "text": "What a lovely day it has been to roam around the city. I love it here! I hate how pathetic and needy you can be sometimes."
-        }
-        """,
-        """
-        {
-            "text": "Shut the hell up, you're so annoying. I can't stand you even in hell. See you tomorrow!"
-        }
-        """,
-    ],
-)
-def test_fail_path(value):
-    # Create a guard from the pydantic model
-    validator = ToxicLanguage(
-        model_name="unbiased-small",
-        threshold=0.5,
-        validation_method="sentence",
-        on_fail="exception",
-    )
-    response = validator.validate(value, metadata={})
-    print("Unhappy path response", response)
-
-    assert response.outcome == "fail"
+# Test failing response (toxic content)
+def test_toxic_language_fail():
+    with pytest.raises(Exception) as e:
+        guard.validate(
+            "Please look carefully. You are a stupid idiot who can't do anything right."
+        )
+    assert "Validation failed for field with errors:" in str(e.value)
