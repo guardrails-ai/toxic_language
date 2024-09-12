@@ -3,7 +3,7 @@ from validator.main import ToxicLanguage
 from guardrails import Guard
 
 guard = Guard().use(
-    ToxicLanguage, threshold=0.5, validation_method="sentence", on_fail="exception"
+    ToxicLanguage, threshold=0.5, validation_method="sentence", on_fail="exception", use_local=False,
 )
 # Test passing response (non-toxic content)
 def test_toxic_language_pass():
