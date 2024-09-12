@@ -1,5 +1,5 @@
 import pytest
-from guardrails.hub import ToxicLanguage
+from validator.main import ToxicLanguage
 from guardrails import Guard
 
 guard = Guard().use(
