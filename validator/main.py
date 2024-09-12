@@ -73,7 +73,7 @@ class ToxicLanguage(Validator):
             raise ValueError("validation_method must be 'sentence' or 'full'.")
         self._validation_method = validation_method
         if self.use_local: 
-            self._model = detoxify.Detoxify(model_name, device=torch.device(device))
+            self._model = detoxify.Detoxify(model_name, device=torch.device(device)) #type: ignore
         self._labels = [
             "toxicity",
             "severe_toxicity",
@@ -105,7 +105,7 @@ class ToxicLanguage(Validator):
             results = self._model.predict(value)
             if results:
                 results = cast(List[List[Dict[str, Any]]], results)
-                for label, score in results.items():
+                for label, score in results.items(): # type: ignore
                     if label in self._labels and score > self._threshold:
                         pred_labels.append(label)
         return pred_labels
@@ -159,30 +159,30 @@ class ToxicLanguage(Validator):
 
         return self.validate_each_sentence(value, metadata)
 
-    def _inference_local(self, value: str | list) -> ValidationResult:
+    def _inference_local(self, model_input: str | list) -> Any:
         """Local inference method for the toxic language validator."""
 
-        if isinstance(value, str):
-            value = [value]
+        if isinstance(model_input, str):
+            model_input = [model_input]
         predictions = []
-        for text in value:
+        for text in model_input:
             pred_labels = self.get_toxicity(text)
             predictions.append(pred_labels)
         
         return predictions
 
-    def _inference_remote(self, value: str | list) -> ValidationResult:
+    def _inference_remote(self, model_input: str | list) -> Any:
         """Remote inference method for the toxic language validator."""
 
-        if isinstance(value, str):
-            value = [value]
+        if isinstance(model_input, str):
+            model_input = [model_input]
 
         request_body = {
             "inputs": [
                 {
                     "name": "text",
-                    "shape": [len(value)],
-                    "data": value,
+                    "shape": [len(model_input)],
+                    "data": model_input,
                     "datatype": "BYTES"
                 },
                 {
