@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from models_host.base_inference_spec import BaseInferenceSpec
 from typing import List
 import detoxify
 import torch
@@ -22,9 +23,8 @@ class OutputResponse(BaseModel):
     outputs: List[InferenceData]
 
 # Using same nomencalture as in Sagemaker classes
-class InferenceSpec:
+class InferenceSpec(BaseInferenceSpec):
     model = None
-    _instance = None
 
     model_name = "unbiased-small"
     validation_method = "sentence"
@@ -43,12 +43,6 @@ class InferenceSpec:
         env = os.environ.get("env", "dev")
         torch_device = "cuda" if env == "prod" else "cpu"
         return torch_device
-    
-    # Singleton pattern
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(InferenceSpec, cls).__new__(cls)
-        return cls._instance
        
     def load(self):
         model_name = self.model_name
