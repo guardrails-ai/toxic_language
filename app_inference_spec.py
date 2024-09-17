@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import HTTPException
 from pydantic import BaseModel
 from models_host.base_inference_spec import BaseInferenceSpec
 from typing import List
