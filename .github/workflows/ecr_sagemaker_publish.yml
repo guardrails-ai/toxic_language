@@ -74,6 +74,8 @@ jobs:
         with:
           builder: ${{ steps.buildx.outputs.name }}
           context: ${{ env.WORKING_DIR }}
+          build-args: |
+            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           platforms: linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max

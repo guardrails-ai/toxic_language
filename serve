@@ -28,7 +28,7 @@ def start_server():
                                  '-k', 'uvicorn.workers.UvicornWorker',
                                  '-b', '0.0.0.0:8080',
                                  '-w', str(model_server_workers),
-                                 'app:app'])
+                                 'models_host.fastapi:app'])
 
     signal.signal(signal.SIGTERM, lambda a, b: sigterm_handler(gunicorn.pid))
 
