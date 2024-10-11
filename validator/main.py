@@ -284,6 +284,7 @@ class ToxicLanguage(Validator):
                 )
             ]
 
+            print('failresult')
             return FailResult(
                 metadata=metadata,
                 error_message=(
@@ -294,4 +295,5 @@ class ToxicLanguage(Validator):
                 fix_value="",
                 error_spans=error_spans,
             )
+        print('passresult')
         return PassResult(metadata=metadata)

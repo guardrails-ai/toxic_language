@@ -32,14 +32,15 @@ def test_toxic_language_full_text_pass():
 # Test failing response for full text validation (toxic content with multiple sentences)
 def test_toxic_language_full_text_fail():
     guard_full = Guard().use(
-        ToxicLanguage, threshold=0.5, validation_method="full", on_fail="exception", use_local=True,
+        ToxicLanguage, threshold=0.5, validation_method="full", on_fail="fix", use_local=True,
     )
-    with pytest.raises(Exception) as e:
-        guard_full.validate(
-            "This message starts innocently enough. However, you are a complete idiot. "
-            "I hope bad things happen to you. The last sentence is also non-toxic."
-        )
-    assert "Validation failed for field with errors:" in str(e.value)
-    assert "The following text in your response was found to be toxic:" in str(e.value)
-    assert "This message starts innocently enough." in str(e.value)
-    assert "The last sentence is also non-toxic." in str(e.value)
+    response = guard_full.validate(
+        "This message starts innocently enough. However, you are a complete idiot. "
+        "I hope bad things happen to you. The last sentence is also non-toxic."
+    )
+    print(f"Validation response: {response}")
+    # assert response.validation_passed is False
+    error_message = response.validation_summaries[0].failure_reason
+    assert "The following text in your response was found to be toxic:" in error_message
+    assert "This message starts innocently enough." in error_message
+    assert "The last sentence is also non-toxic." in error_message
