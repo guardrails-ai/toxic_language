@@ -156,8 +156,10 @@ class ToxicLanguage(Validator):
         """Validation method for the toxic language validator."""
         if not value:
             raise ValueError("Value cannot be empty.")
-
-        return self.validate_each_sentence(value, metadata)
+        if self._validation_method == "sentence":
+            return self.validate_each_sentence(value, metadata)
+        else:
+            return self.validate_full_text(value, metadata)
 
     def _inference_local(self, model_input: str | list) -> Any:
         """Local inference method for the toxic language validator."""
@@ -269,3 +271,27 @@ class ToxicLanguage(Validator):
             )
 
         return adjusted_spans
+
+    def validate_full_text(self, value: str, metadata: Dict[str, Any]) -> ValidationResult:
+        pred_labels = self._inference([value])[0]
+
+        if pred_labels:
+            error_spans = [
+                ErrorSpan(
+                    start=0,
+                    end=len(value),
+                    reason=f"Toxic language detected: {', '.join(pred_labels)}",
+                )
+            ]
+
+            return FailResult(
+                metadata=metadata,
+                error_message=(
+                    "The following text in your response "
+                    "was found to be toxic:\n"
+                    f"\n{value}"
+                ),
+                fix_value="",
+                error_spans=error_spans,
+            )
+        return PassResult(metadata=metadata)
