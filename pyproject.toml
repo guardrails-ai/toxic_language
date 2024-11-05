@@ -1,6 +1,6 @@
 [project]
 name = "toxic_language"
-version = "0.0.0"
+version = "0.0.1"
 description = "Validates whether the generated text is toxic."
 authors = [
     {name = "Guardrails AI", email = "contact@guardrailsai.com"}
