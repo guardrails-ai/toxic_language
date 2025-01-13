@@ -1,4 +1,3 @@
-import nltk
 import detoxify
 
 # Download NLTK data if not already present

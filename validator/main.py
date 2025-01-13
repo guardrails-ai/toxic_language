@@ -161,7 +161,7 @@ class ToxicLanguage(Validator):
         else:
             return self.validate_full_text(value, metadata)
 
-    def _inference_local(self, model_input: str | list) -> Any:
+    def _inference_local(self, model_input: Union[str, list]) -> Any:
         """Local inference method for the toxic language validator."""
 
         if isinstance(model_input, str):
@@ -173,7 +173,7 @@ class ToxicLanguage(Validator):
         
         return predictions
 
-    def _inference_remote(self, model_input: str | list) -> Any:
+    def _inference_remote(self, model_input: Union[str, list]) -> Any:
         """Remote inference method for the toxic language validator."""
 
         if isinstance(model_input, str):
