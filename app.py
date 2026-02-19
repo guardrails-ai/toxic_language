@@ -1,3 +1,4 @@
+# Note: this will be deprecated in the future in favour of the shared "model-hosts" package which contains this code.
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List
