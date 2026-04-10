@@ -3,7 +3,7 @@ from validator.main import ToxicLanguage
 from guardrails import Guard
 
 guard = Guard().use(
-    ToxicLanguage, threshold=0.5, validation_method="sentence", on_fail="exception", use_local=True,
+    ToxicLanguage(threshold=0.5, validation_method="sentence", on_fail="exception", use_local=True),
 )
 # Test passing response (non-toxic content)
 def test_toxic_language_pass():
@@ -21,7 +21,7 @@ def test_toxic_language_fail():
 # Test passing response for full text validation (non-toxic content with multiple sentences)
 def test_toxic_language_full_text_pass():
     guard_full = Guard().use(
-        ToxicLanguage, threshold=0.5, validation_method="full", on_fail="exception", use_local=True,
+        ToxicLanguage(threshold=0.5, validation_method="full", on_fail="exception", use_local=True),
     )
     response = guard_full.validate(
         "This is a completely harmless and friendly message. It contains multiple sentences. "
@@ -32,7 +32,7 @@ def test_toxic_language_full_text_pass():
 # Test failing response for full text validation (toxic content with multiple sentences)
 def test_toxic_language_full_text_fail():
     guard_full = Guard().use(
-        ToxicLanguage, threshold=0.5, validation_method="full", on_fail="fix", use_local=True,
+        ToxicLanguage(threshold=0.5, validation_method="full", on_fail="fix", use_local=True),
     )
     response = guard_full.validate(
         "This message starts innocently enough. However, you are a complete idiot. "

@@ -1,6 +1,6 @@
 [project]
 name = "toxic_language"
-version = "0.0.2"
+version = "0.0.3a0"
 description = "Validates whether the generated text is toxic."
 authors = [
     {name = "Guardrails AI", email = "contact@guardrailsai.com"}
@@ -12,7 +12,6 @@ dependencies = [
     "guardrails-ai>=0.4.0",
     "nltk",
     "transformers",
-    "torch",
     "detoxify"
 ]
 
