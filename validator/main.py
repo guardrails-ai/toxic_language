@@ -4,7 +4,6 @@ from typing import Any, Callable, Dict, List, Optional, Union, cast
 
 import detoxify
 import nltk
-import torch
 from guardrails.validator_base import (
     ErrorSpan,
     FailResult,
@@ -73,7 +72,7 @@ class ToxicLanguage(Validator):
             raise ValueError("validation_method must be 'sentence' or 'full'.")
         self._validation_method = validation_method
         if self.use_local: 
-            self._model = detoxify.Detoxify(model_name, device=torch.device(device)) #type: ignore
+            self._model = detoxify.Detoxify(model_name, device=device) #type: ignore
         self._labels = [
             "toxicity",
             "severe_toxicity",
@@ -142,13 +141,13 @@ class ToxicLanguage(Validator):
 
             return FailResult(
                 metadata=metadata,
-                error_message=(
+                errorMessage=(
                     f"The following sentences in your response "
                     "were found to be toxic:\n"
                     f"\n{unsupported_sentences_text}"
                 ),
-                fix_value="\n".join(supported_sentences),
-                error_spans=error_spans,
+                fixValue="\n".join(supported_sentences),
+                errorSpans=error_spans,
             )
         return PassResult(metadata=metadata)
 
@@ -195,7 +194,7 @@ class ToxicLanguage(Validator):
                 }
             ]
         }
-        response = self._hub_inference_request(json.dumps(request_body), self.validation_endpoint)
+        response = self._hub_inference_request(json.dumps(request_body), self.validation_endpoint)  # type: ignore
         if not response or "outputs" not in response:
             raise ValueError("Invalid response from remote inference", response)
 
@@ -286,12 +285,12 @@ class ToxicLanguage(Validator):
 
             return FailResult(
                 metadata=metadata,
-                error_message=(
+                errorMessage=(
                     "The following text in your response "
                     "was found to be toxic:\n"
                     f"\n{value}"
                 ),
-                fix_value="",
-                error_spans=error_spans,
+                fixValue="",
+                errorSpans=error_spans,
             )
         return PassResult(metadata=metadata)
